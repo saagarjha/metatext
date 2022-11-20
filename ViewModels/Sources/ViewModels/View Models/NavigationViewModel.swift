@@ -44,6 +44,7 @@ public extension NavigationViewModel {
         case explore
         case notifications
         case messages
+        case settings
     }
 
     var tabs: [Tab] {

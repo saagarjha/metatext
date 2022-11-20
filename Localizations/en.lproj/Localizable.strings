@@ -185,6 +185,7 @@
 "main-navigation.explore" = "Explore";
 "main-navigation.notifications" = "Notifications";
 "main-navigation.conversations" = "Messages";
+"main-navigation.settings" = "Settings";
 "metatext" = "Metatext";
 "notification.accessibility.view-profile" = "View profile";
 "notification.signed-in-as-%@" = "Logged in as %@";

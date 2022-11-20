@@ -67,7 +67,7 @@ final class TimelinesViewController: UIPageViewController {
                     self?.announcementsButton.tintColor = nil
                 }
 
-                self?.navigationItem.rightBarButtonItem = $0.total > 0 ? self?.announcementsButton : nil
+//                self?.navigationItem.rightBarButtonItem = $0.total > 0 ? self?.announcementsButton : nil
             }
             .store(in: &cancellables)
     }

@@ -15,6 +15,8 @@ extension NavigationViewModel.Tab {
             return NSLocalizedString("main-navigation.notifications", comment: "")
         case .messages:
             return NSLocalizedString("main-navigation.conversations", comment: "")
+        case .settings:
+            return NSLocalizedString("main-navigation.settings", comment: "")
         }
     }
 
@@ -24,6 +26,7 @@ extension NavigationViewModel.Tab {
         case .explore: return "magnifyingglass"
         case .notifications: return "bell"
         case .messages: return "envelope"
+        case .settings: return "gearshape"
         }
     }
 

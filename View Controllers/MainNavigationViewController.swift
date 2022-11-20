@@ -37,7 +37,7 @@ final class MainNavigationViewController: UITabBarController {
 
         viewModel.$presentingSecondaryNavigation.sink { [weak self] in
             if $0 {
-                self?.presentSecondaryNavigation()
+                self?.presentProfile()
             } else {
                 self?.dismissSecondaryNavigation()
             }
@@ -113,7 +113,11 @@ private extension MainNavigationViewController {
                 viewModel: viewModel,
                 rootViewModel: rootViewModel)
         ]
-
+        
+        let secondaryNavigationController = UIHostingController(rootView: SecondaryNavigationView(viewModel: viewModel))
+        secondaryNavigationController.navigationItem.titleView = SecondaryNavigationTitleView(viewModel: viewModel)
+        secondaryNavigationController.tabBarItem =  NavigationViewModel.Tab.settings.tabBarItem
+        
         if viewModel.identityContext.identity.authenticated && !pending {
             tabBar.isHidden = false
             controllers.append(ExploreViewController(viewModel: viewModel.exploreViewModel(),
@@ -128,77 +132,32 @@ private extension MainNavigationViewController {
             conversationsViewController.navigationItem.title = NavigationViewModel.Tab.messages.title
 
             controllers.append(conversationsViewController)
-
-            setupNewStatusButton()
         } else {
             tabBar.isHidden = true
         }
 
         let secondaryNavigationButton = SecondaryNavigationButton(viewModel: viewModel, rootViewModel: rootViewModel)
-
+        
+        let composeItem = UIBarButtonItem(systemItem: .compose)
+        composeItem.target = self
+        composeItem.action = #selector(newStatus)
+        
         for controller in controllers {
             controller.navigationItem.leftBarButtonItem = secondaryNavigationButton
+            controller.navigationItem.rightBarButtonItem = composeItem
         }
-
-        viewControllers = controllers.map(UINavigationController.init(rootViewController:))
+        
+        viewControllers = ( controllers + [secondaryNavigationController]).map(UINavigationController.init(rootViewController:))
     }
-
-    func setupNewStatusButton() {
-        let newStatusButtonView = NewStatusButtonView(primaryAction: UIAction { [weak self] _ in
-            guard let self = self else { return }
-
-            self.viewModel.presentedNewStatusViewModel =
-                self.rootViewModel.newStatusViewModel(identityContext: self.viewModel.identityContext)
-        })
-
-        view.addSubview(newStatusButtonView)
-        newStatusButtonView.translatesAutoresizingMaskIntoConstraints = false
-
-        viewModel.identityContext.$appPreferences.map(\.statusWord).removeDuplicates().sink {
-            switch $0 {
-            case .toot:
-                newStatusButtonView.button.accessibilityLabel =
-                    NSLocalizedString("compose-button.accessibility-label.toot", comment: "")
-            case.post:
-                newStatusButtonView.button.accessibilityLabel =
-                    NSLocalizedString("compose-button.accessibility-label.post", comment: "")
-            }
-        }
-        .store(in: &cancellables)
-
-        NSLayoutConstraint.activate([
-            newStatusButtonView.widthAnchor.constraint(equalToConstant: .newStatusButtonDimension),
-            newStatusButtonView.heightAnchor.constraint(equalToConstant: .newStatusButtonDimension),
-            newStatusButtonView.trailingAnchor.constraint(
-                equalTo: view.safeAreaLayoutGuide.trailingAnchor,
-                constant: -.defaultSpacing * 2),
-            newStatusButtonView.bottomAnchor.constraint(equalTo: tabBar.topAnchor, constant: -.defaultSpacing * 2)
-        ])
+    
+    @objc func newStatus(_ sender: AnyObject) {
+        viewModel.presentedNewStatusViewModel = rootViewModel.newStatusViewModel(identityContext: viewModel.identityContext)
     }
-
-    func presentSecondaryNavigation() {
-        if let presentedViewController = presentedViewController {
-            if presentedViewController.view.tag == Self.secondaryNavigationViewTag {
-                return
-            } else {
-                dismiss(animated: true)
-            }
+    
+    func presentProfile() {
+        if let id = viewModel.identityContext.identity.account?.id {
+            viewModel.navigateToProfile(id: id)
         }
-
-        let secondaryNavigationView = SecondaryNavigationView(viewModel: viewModel)
-            .environmentObject(rootViewModel)
-        let hostingController = UIHostingController(rootView: secondaryNavigationView)
-
-        hostingController.navigationItem.leftBarButtonItem = UIBarButtonItem(
-            systemItem: .close,
-            primaryAction: UIAction { [weak self] _ in self?.viewModel.presentingSecondaryNavigation = false })
-        hostingController.navigationItem.titleView = SecondaryNavigationTitleView(viewModel: viewModel)
-
-        let navigationController = UINavigationController(rootViewController: hostingController)
-
-        navigationController.view.tag = Self.secondaryNavigationViewTag
-
-        present(navigationController, animated: true)
     }
 
     func dismissSecondaryNavigation() {
