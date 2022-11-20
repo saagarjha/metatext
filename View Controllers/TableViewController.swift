@@ -59,11 +59,16 @@ class TableViewController: UITableViewController {
         tableView.shouldGroupAccessibilityChildren = true
 
         if viewModel.canRefresh {
-            refreshControl = UIRefreshControl()
-            refreshControl?.addAction(
-                UIAction { [weak self] _ in
-                    self?.refreshIfAble() },
-                for: .valueChanged)
+            if UIDevice.current.userInterfaceIdiom == .mac {
+                let refreshCommand = UIKeyCommand(input: "r", modifierFlags: .command, action: #selector(_refresh))
+                addKeyCommand(refreshCommand)
+            } else {
+                refreshControl = UIRefreshControl()
+                refreshControl?.addAction(
+                    UIAction { [weak self] _ in
+                        self?.refreshIfAble() },
+                    for: .valueChanged)
+            }
         }
 
         view.addSubview(webfingerIndicatorView)
@@ -105,6 +110,26 @@ class TableViewController: UITableViewController {
 
         refreshIfAble()
     }
+    
+#if targetEnvironment(macCatalyst)
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        navigationController?.setNavigationBarHidden(true, animated: false)
+        
+        let toolbar = NSToolbar(identifier: "table")
+        toolbar.delegate = self
+                
+        let scene = UIApplication.shared.connectedScenes.compactMap {
+            $0 as? UIWindowScene
+        }.first!
+        let titlebar = scene.titlebar!
+        scene.title = navigationItem.title
+        titlebar.toolbarStyle = .unifiedCompact
+        titlebar.titleVisibility = .visible
+        titlebar.toolbar = toolbar
+    }
+#endif
 
     override func scrollViewDidScroll(_ scrollView: UIScrollView) {
         guard scrollView.isDragging else { return }
@@ -198,6 +223,23 @@ class TableViewController: UITableViewController {
         }
     }
 }
+
+#if targetEnvironment(macCatalyst)
+extension TableViewController: NSToolbarDelegate {
+    func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+        return [
+        ]
+    }
+    
+    func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+        return []
+    }
+    
+    func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier itemIdentifier: NSToolbarItem.Identifier, willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
+        return nil
+    }
+}
+#endif
 
 extension TableViewController {
     func confirm(message: String, style: UIAlertAction.Style = .default, action: @escaping () -> Void) {
@@ -817,7 +859,7 @@ private extension TableViewController {
     func share(url: URL) {
         let activityViewController = UIActivityViewController(
             activityItems: [url],
-            applicationActivities: [OpenInDefaultBrowserActivity()])
+            applicationActivities: [OpenInDefaultBrowserActivity(), CopyActivity()])
 
         if UIDevice.current.userInterfaceIdiom == .pad {
             guard let sourceView = tableView.viewWithTag(url.hashValue) else { return }
@@ -826,6 +868,10 @@ private extension TableViewController {
         }
 
         present(activityViewController, animated: true, completion: nil)
+    }
+    
+    @objc func _refresh(_ sender: AnyObject) {
+        refreshIfAble()
     }
 
     func refreshIfAble() {

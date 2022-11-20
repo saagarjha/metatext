@@ -42,11 +42,16 @@ final class ExploreViewController: UICollectionViewController {
         collectionView.shouldGroupAccessibilityChildren = true
         clearsSelectionOnViewWillAppear = true
 
-        collectionView.refreshControl = UIRefreshControl()
-        collectionView.refreshControl?.addAction(
-            UIAction { [weak self] _ in
-                self?.viewModel.refresh() },
-            for: .valueChanged)
+        if UIDevice.current.userInterfaceIdiom == .mac {
+            let refreshCommand = UIKeyCommand(input: "r", modifierFlags: .command, action: #selector(_refresh))
+            addKeyCommand(refreshCommand)
+        } else {
+            collectionView.refreshControl = UIRefreshControl()
+            collectionView.refreshControl?.addAction(
+                UIAction { [weak self] _ in
+                    self?.viewModel.refresh() },
+                for: .valueChanged)
+        }
 
         navigationItem.title = NSLocalizedString("main-navigation.explore", comment: "")
 
@@ -102,6 +107,30 @@ final class ExploreViewController: UICollectionViewController {
 
         viewModel.refresh()
     }
+    
+#if targetEnvironment(macCatalyst)
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        navigationController?.setNavigationBarHidden(true, animated: false)
+        navigationController?.interactivePopGestureRecognizer?.delegate = self
+        
+        let toolbar = NSToolbar(identifier: "explore")
+        toolbar.delegate = self
+        
+        let scene = UIApplication.shared.connectedScenes.compactMap {
+            $0 as? UIWindowScene
+        }.first!
+        let titlebar = scene.titlebar!
+        scene.title = navigationItem.title
+        titlebar.toolbar = toolbar
+        titlebar.titleVisibility = .visible
+    }
+#endif
+    
+    @objc func _refresh(_ sender: AnyObject) {
+        viewModel.refresh()
+    }
 
     override func collectionView(_ collectionView: UICollectionView,
                                  shouldHighlightItemAt indexPath: IndexPath) -> Bool {
@@ -114,6 +143,40 @@ final class ExploreViewController: UICollectionViewController {
         viewModel.select(item: item)
     }
 }
+
+#if targetEnvironment(macCatalyst)
+extension ExploreViewController: NSToolbarDelegate, UIGestureRecognizerDelegate {
+    enum ToolbarItem: String, CaseIterable {
+        case search
+        
+        var identifier: NSToolbarItem.Identifier {
+            NSToolbarItem.Identifier(rawValue)
+        }
+    }
+    
+    func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+        return [
+            .flexibleSpace,
+            NSToolbarItem.Identifier(ToolbarItem.search.rawValue),
+        ]
+    }
+    
+    func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+        ToolbarItem.allCases.map(\.identifier)
+    }
+    
+    func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier itemIdentifier: NSToolbarItem.Identifier, willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
+        switch ToolbarItem(rawValue: itemIdentifier.rawValue)! {
+        case .search:
+            return NSToolbarItem(itemIdentifier: itemIdentifier, barButtonItem: UIBarButtonItem(customView: navigationItem.searchController!.searchBar))
+        }
+    }
+    
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        return true
+    }
+}
+#endif
 
 extension ExploreViewController: UISearchResultsUpdating {
     func updateSearchResults(for searchController: UISearchController) {

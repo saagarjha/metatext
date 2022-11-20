@@ -117,6 +117,9 @@ private extension CompositionView {
         textView.tag = textInputAccessoryView.tagForInputView
         textView.inputAccessoryView?.sizeToFit()
         textView.delegate = self
+        if UIDevice.current.userInterfaceIdiom == .mac {
+            stackView.addArrangedSubview(textInputAccessoryView)
+        }
 
         textView.addSubview(textViewPlaceholder)
         textViewPlaceholder.translatesAutoresizingMaskIntoConstraints = false

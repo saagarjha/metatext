@@ -69,7 +69,68 @@ final class NotificationsViewController: UIPageViewController {
             },
             for: .valueChanged)
     }
+    
+#if targetEnvironment(macCatalyst)
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        navigationController?.setNavigationBarHidden(true, animated: false)
+        navigationController?.interactivePopGestureRecognizer?.delegate = self
+        
+        let toolbar = NSToolbar(identifier: "notifications")
+        toolbar.delegate = self
+        
+        if #available(macCatalyst 16.0, *) {
+            toolbar.centeredItemIdentifiers = [ToolbarItem.segment.identifier]
+        }
+        
+        let scene = UIApplication.shared.connectedScenes.compactMap {
+            $0 as? UIWindowScene
+        }.first!
+        let titlebar = scene.titlebar!
+        titlebar.titleVisibility = .hidden
+        titlebar.toolbar = toolbar
+    }
+#endif
 }
+
+#if targetEnvironment(macCatalyst)
+extension NotificationsViewController: NSToolbarDelegate, UIGestureRecognizerDelegate {
+    enum ToolbarItem: String, CaseIterable {
+        case segment
+        case compose
+        
+        var identifier: NSToolbarItem.Identifier {
+            NSToolbarItem.Identifier(rawValue)
+        }
+    }
+    
+    func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+        return [
+            NSToolbarItem.Identifier(ToolbarItem.segment.rawValue),
+            .flexibleSpace,
+            NSToolbarItem.Identifier(ToolbarItem.compose.rawValue),
+        ]
+    }
+    
+    func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+        ToolbarItem.allCases.map(\.identifier)
+    }
+    
+    func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier itemIdentifier: NSToolbarItem.Identifier, willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
+        switch ToolbarItem(rawValue: itemIdentifier.rawValue)! {
+        case .segment:
+            return NSToolbarItem(itemIdentifier: itemIdentifier, barButtonItem: UIBarButtonItem(customView: segmentedControl))
+        case .compose:
+            return NSToolbarItem(itemIdentifier: itemIdentifier, barButtonItem: navigationItem.rightBarButtonItem!)
+        }
+    }
+    
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        return true
+    }
+}
+#endif
 
 extension NotificationsViewController: NavigationHandling {
     func handle(navigation: Navigation) {
