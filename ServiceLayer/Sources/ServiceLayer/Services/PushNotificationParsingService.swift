@@ -22,7 +22,7 @@ public struct PushNotificationParsingService {
 
 public extension PushNotificationParsingService {
     static let identityIdUserInfoKey = "i"
-    static let pushNotificationUserInfoKey = "com.metabolist.metatext.push-notification-user-info-key"
+    static let pushNotificationUserInfoKey = "com.saagarjha.metatext.push-notification-user-info-key"
 
     func extractAndDecrypt(userInfo: [AnyHashable: Any]) throws -> (Data, Identity.Id) {
         guard let identityIdString = userInfo[Self.identityIdUserInfoKey] as? String,

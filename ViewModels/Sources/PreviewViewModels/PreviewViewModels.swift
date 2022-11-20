@@ -52,7 +52,7 @@ extension ContentDatabase {
         id: identityId,
         useHomeTimelineLastReadId: false,
         inMemory: true,
-        appGroup: "group.metabolist.metatext",
+        appGroup: "group.com.saagarjha.metatext",
         keychain: MockKeychain.self)
 }
 

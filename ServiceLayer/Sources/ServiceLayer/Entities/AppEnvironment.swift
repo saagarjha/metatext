@@ -43,7 +43,7 @@ public struct AppEnvironment {
 }
 
 public extension AppEnvironment {
-    static let appGroup = "group.metabolist.metatext"
+    static let appGroup = "group.com.saagarjha.metatext"
 
     static func live(userNotificationCenter: UNUserNotificationCenter,
                      reduceMotion: @escaping () -> Bool,
